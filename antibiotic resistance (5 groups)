@@ -49,6 +49,9 @@ for under_over in range(2):
             groupRSNAcount= [[0, 0, 0], [0, 0, 0], [0, 0, 0],[0, 0, 0],[0, 0, 0],[0, 0, 0]]
             groupi=0
             RSNAi=0
+            #feature : ['GENDER', 'AGE', 'WARD', 'DIAGNOSIS', 'OTHER_INFECT', 'DIABETES', 'LUNG_DISEASE', 
+            #'HEART_FAILURE', 'RENAL_IMPAIR', 'LIVER_IMPAIR', 'CANCER', 'IMMUN_DEFI', 'OTHER_COM', 
+            #'INDWELLING', 'SAMPLE']
             for row in rows:
                 if Totalcount == 0 :
                     print(row[RS:RS+1][0])
@@ -56,27 +59,27 @@ for under_over in range(2):
                 check = 0
                 if Totalcount != 0 :
                     if row[RS:RS+1][0] != 'NA':
-                        if row[26:27][0] == 'Escherichia coli ':
-                            X.append(row[3:5]+row[10:11]+row[13:25])
+                        if row[26:27][0] == 'Escherichia coli ':      #group 2
+                            X.append(row[3:5]+row[10:11]+row[13:25])  
                             Y1.append(2)
                             groupcount[2]+=1
                             check = 1
-                        elif row[26:27][0] == 'Klebsiella spp.':
+                        elif row[26:27][0] == 'Klebsiella spp.':      #group 3
                             X.append(row[3:5]+row[10:11]+row[13:25])
                             Y1.append(3)
                             groupcount[3]+=1
                             check = 1
-                        elif row[26:27][0] == 'Staphylococcus spp.' or row[26:27][0] == 'Staphylococcus aureus':
+                        elif row[26:27][0] == 'Staphylococcus spp.' or row[26:27][0] == 'Staphylococcus aureus':      #group 4
                             X.append(row[3:5]+row[10:11]+row[13:25])
                             Y1.append(4)
                             groupcount[4]+=1
                             check = 1
-                        elif row[26:27][0] == 'Acinetobacter spp.' :
+                        elif row[26:27][0] == 'Acinetobacter spp.' :      #group 1
                             X.append(row[3:5]+row[10:11]+row[13:25])
                             Y1.append(1)
                             groupcount[1]+=1
                             check = 1
-                        elif row[26:27][0] == 'Pseudomonas aeruginosa ':
+                        elif row[26:27][0] == 'Pseudomonas aeruginosa ':       #group 5
                             X.append(row[3:5]+row[10:11]+row[13:25])
                             Y1.append(5)
                             groupcount[5]+=1
