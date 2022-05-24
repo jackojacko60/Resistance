@@ -34,6 +34,7 @@ for under_over in range(2):
     for s in range(0,20):
         savetable[2+s][1] = result_name[s%4]
     
+    #----------input data----------
     for RS in RSS :
         with open('resistance_data_20172021-v3.csv', newline='',encoding="unicode_escape") as csvfile:
             rows = list(csv.reader(csvfile))
@@ -109,7 +110,7 @@ for under_over in range(2):
                 groupRSNAcount[groupi][RSNAi]+=1;
             t_X1=np.array(X)
         labelencoder = LabelEncoder()
-
+    #------------------------------
 
 
         for i in range(0,15):
@@ -139,9 +140,9 @@ for under_over in range(2):
         print("R : ",groupRSNAcount[5][0],",S : ",groupRSNAcount[5][1],",NA : ",groupRSNAcount[5][2])
 
         
-        for models in range(5):
+        for models in range(5): # 5 models
             group_count_num = 0
-            for i in range(0,category+1):
+            for i in range(0,category+1): # 5 groups
                 group_count_num += 1
                 t_X2=t_X1[t_Y1==i]
                 t_Y3=t_Y2[t_Y1==i]
@@ -153,8 +154,9 @@ for under_over in range(2):
                 newt_X2 = []
                 newt_Y3 = []
                 k = 0
-                if under_over == 0:
-                    if len(t_X2_R)<len(t_X2_S) :
+                #-------data resampling---------
+                if under_over == 0: # use oversampling data
+                    if len(t_X2_R)<len(t_X2_S) :      # if resistance data < susceptible data
                         for k in range(len(t_X2_R)):
                             newt_X2.append(t_X2_R[k])
                         for k in range(len(t_X2_R)):
@@ -163,7 +165,7 @@ for under_over in range(2):
                             newt_Y3.append(t_Y3_R[k])
                         for k in range(len(t_Y3_R)):
                             newt_Y3.append(t_Y3_S[k])
-                    else :
+                    else :                              # if resistance data > susceptible data
                         for k in range(len(t_X2_S)):
                             newt_X2.append(t_X2_S[k])
                         for k in range(len(t_X2_S)):
@@ -172,11 +174,11 @@ for under_over in range(2):
                             newt_Y3.append(t_Y3_S[k])
                         for k in range(len(t_Y3_S)):
                             newt_Y3.append(t_Y3_R[k])
-                else:
+                else:               # use undersampling data
                     index = 0
                     #print(len(t_X2_R)," ",len(t_X2_S))
                     if len(t_X2_R)==0 or len(t_X2_S)==0 : continue
-                    if len(t_X2_R)<len(t_X2_S) :
+                    if len(t_X2_R)<len(t_X2_S) :        # if resistance data < susceptible data
                         for k in range(len(t_X2_R)):
                             newt_X2.append(t_X2_R[k])
                             newt_Y3.append(t_Y3_R[k])
@@ -188,7 +190,7 @@ for under_over in range(2):
                         for k in range(len(t_X2_S)):
                             newt_X2.append(t_X2_S[k])
                             newt_Y3.append(t_Y3_S[k])
-                    else :
+                    else :                             # if resistance data > susceptible data
                         for k in range(len(t_X2_S)):
                             newt_X2.append(t_X2_S[k])
                             newt_Y3.append(t_Y3_S[k])
@@ -201,10 +203,10 @@ for under_over in range(2):
                             newt_X2.append(t_X2_R[k])
                             newt_Y3.append(t_Y3_R[k])    
                     #print(len(newt_X2)," ",len(newt_Y3))
-                    
+                #------------------------------    
                 print(np.size(newt_Y3))
                 if np.size(newt_Y3) <= 100: continue 
-                x_train, x_test, y_train, y_test = train_test_split(newt_X2, newt_Y3, test_size=0.2, random_state=42)
+                x_train, x_test, y_train, y_test = train_test_split(newt_X2, newt_Y3, test_size=0.2, random_state=42) #split data into training data set and testing data set
                 print(labelencoder.inverse_transform([group_count_num-1]),end=' ')
                 print('[%d]= %d' % (group_count_num-1,np.size(t_Y3)))
                 x_train_std = sc.fit_transform(x_train)
@@ -215,6 +217,7 @@ for under_over in range(2):
                 AUCs = []
 
                 clf = 0
+                #--------models----------
                 if models == 0:
                     clf = LogisticRegression(penalty='l1', C=c, max_iter = 5000 ,multi_class='ovr',solver='saga',random_state=42)
                 elif models == 1:
@@ -226,73 +229,64 @@ for under_over in range(2):
                 elif models == 4:
                     clf = XGBClassifier(
                         num_class=1,
-                        #樹的個數
+                        
+                        #number of tree
                         n_estimators=100,
-                        # 如同學習率
+                        
+                        # learning rate
                         learning_rate= 0.3, 
-                        # 構建樹的深度，越大越容易過擬合    
+                        
+                        # max depth 
                         max_depth=6, 
-                        # 隨機取樣訓練樣本 訓練例項的子取樣比
+                        
+                        # Randomly sample training samples Subsampling ratio of training examples
                         subsample=1, 
-                        # 用於控制是否後剪枝的引數,越大越保守，一般0.1、0.2這樣子
+                        
                         gamma=0, 
-                        # 控制模型複雜度的權重值的L2正則化項引數，引數越大，模型越不容易過擬合。
+                        
+                        # The L2 regularization term argument that controls the weight value of the model complexity. 
+                        # The larger the argument, the less likely the model is to overfit.
                         reg_lambda=1,  
 
-                        #最大增量步長，我們允許每個樹的權重估計。
+                        #The maximum incremental step size we allow for weight estimates per tree.
                         max_delta_step=0,
-                        # 生成樹時進行的列取樣 
+                        
+                        # Column sampling when spanning trees
                         colsample_bytree=1, 
 
-                        # 這個引數預設是 1，是每個葉子裡面 h 的和至少是多少，對正負樣本不均衡時的 0-1 分類而言
-                        # 假設 h 在 0.01 附近，min_child_weight 為 1 意味著葉子節點中最少需要包含 100 個樣本。
-                        #這個引數非常影響結果，控制葉子節點中二階導的和的最小值，該引數值越小，越容易 overfitting。
                         min_child_weight=1, 
 
-                        #隨機種子
+                        #random seeed
                         seed=1000,
                         eval_metric='mlogloss')
-
+                #----------------------------
                 #clf = svm.SVC(kernel='rbf',C=c,decision_function_shape='ovr',random_state=42)
                 clf.fit(x_train_std, y_train)
-                scores = cross_val_score(clf, sc.fit_transform(newt_X2), newt_Y3, cv=10, scoring='f1_macro')
+                scores = cross_val_score(clf, sc.fit_transform(newt_X2), newt_Y3, cv=10, scoring='f1_macro') #cross-validation
                 print('cross-validation :' ,scores)
                 print('cross-validation mean:' ,scores.mean())
-                #cross_validation[j+1][i+1]=scores.mean()
 
-                print('Training accuracy: %.3f' % clf.score(x_train_std, y_train))
-                print('Test accuracy: %.3f' % clf.score(x_test_std, y_test))
-                #accuracy_array[(j)*2+1][i+2] = clf.score(x_train_std, y_train)
-                #accuracy_array[(j)*2+2][i+2] = clf.score(x_test_std, y_test)
+                print('Training accuracy: %.3f' % clf.score(x_train_std, y_train)) # Training accuracy
+                print('Test accuracy: %.3f' % clf.score(x_test_std, y_test)) # Test accuracy
 
                 print('')
-
-                #y_pred = clf.predict(x_test_std)
-                #cm = confusion_matrix(y_test, y_pred)
-                #cm_display = ConfusionMatrixDisplay(cm,"Predicted label").plot()
-
                 y_score = 0
                 y_score = clf.fit(x_train_std, y_train).predict(x_test_std)
 
                 fpr, tpr, _ = roc_curve(y_test, y_score, pos_label=clf.classes_[1])
-                roc_auc = metrics.auc(fpr, tpr)
-                #AUC[j+1][i+1] = roc_auc
-                #FPRs.append(fpr)
-                #TPRs.append(tpr)
-                #AUCs.append(roc_auc)
-                #j+=1
+                roc_auc = metrics.auc(fpr, tpr) #AUC
                 filename = ANname + " Group" + str(group_count_num)
                 if under_over == 0:
                     filename += " (undersampling)"
                 else :
                     filename += " (oversampling)"
- 
+                #------ROC curve------
                 roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr, roc_auc=roc_auc,estimator_name='example estimator')
                 roc_display.plot()
                 plt.title(model_name[models] + filename)
                 plt.savefig(model_name[models] + filename + ".png")  
                 plt.show()    
-
+                #---------------------
                 savetable[2+models*4+0][2+RS_count_i*5+group_count_num-1] = "{:.6f}".format(clf.score(x_train_std, y_train))
                 savetable[2+models*4+1][2+RS_count_i*5+group_count_num-1] = "{:.6f}".format(clf.score(x_test_std, y_test))
                 savetable[2+models*4+2][2+RS_count_i*5+group_count_num-1] = "{:.6f}".format(scores.mean())
@@ -303,6 +297,7 @@ for under_over in range(2):
             #print(AUC)
             #print(accuracy_array)
         RS_count_i +=1
+    #------result output (excel)------
     result_file_name = ''
     print(savetable)
     if under_over == 0 :
@@ -313,3 +308,4 @@ for under_over in range(2):
         for row in savetable:
             writer = csv.writer(csvfileoutput)
             writer.writerow(row)
+    #------------------------
