@@ -1,0 +1,90 @@
+RS = 27
+RSS= [27,37,38,53,55,65,77]
+for RS in RSS:
+    with open('resistance_data_20172021-v3.csv', newline='',encoding="unicode_escape") as csvfile:
+        rows = list(csv.reader(csvfile))
+        X=[]
+        Y1=[]
+        Y2=[]
+        Totalcount = 0
+        Rcount=0
+        Scount=0
+        NAcount=0
+        groupcount=[0]*6
+        groupRSNAcount= [[0, 0, 0], [0, 0, 0], [0, 0, 0],[0, 0, 0],[0, 0, 0],[0, 0, 0]]
+        groupi=0
+        RSNAi=0
+        #feature : ['GENDER', 'AGE', 'WARD', 'DIAGNOSIS', 'OTHER_INFECT', 'DIABETES', 'LUNG_DISEASE', 
+        #'HEART_FAILURE', 'RENAL_IMPAIR', 'LIVER_IMPAIR', 'CANCER', 'IMMUN_DEFI', 'OTHER_COM', 
+        #'INDWELLING', 'SAMPLE']
+        for row in rows:
+            if Totalcount == 0 :
+                print(row[RS:RS+1][0])
+                ANname = row[RS:RS+1][0]
+            check = 0
+            if Totalcount != 0 :
+                if row[RS:RS+1][0] != 'NA':
+                    if row[26:27][0] == 'Escherichia coli ':      #group 2
+                        X.append(row[3:5]+row[10:11]+row[13:25])  
+                        Y1.append(2)
+                        groupcount[2]+=1
+                        check = 1
+                    elif row[26:27][0] == 'Klebsiella spp.':      #group 3
+                        X.append(row[3:5]+row[10:11]+row[13:25])
+                        Y1.append(3)
+                        groupcount[3]+=1
+                        check = 1
+                    elif row[26:27][0] == 'Staphylococcus spp.' or row[26:27][0] == 'Staphylococcus aureus':      #group 4
+                        X.append(row[3:5]+row[10:11]+row[13:25])
+                        Y1.append(4)
+                        groupcount[4]+=1
+                        check = 1
+                    elif row[26:27][0] == 'Acinetobacter spp.' :      #group 1
+                        X.append(row[3:5]+row[10:11]+row[13:25])
+                        Y1.append(1)
+                        groupcount[1]+=1
+                        check = 1
+                    elif row[26:27][0] == 'Pseudomonas aeruginosa ':       #group 5
+                        X.append(row[3:5]+row[10:11]+row[13:25])
+                        Y1.append(5)
+                        groupcount[5]+=1
+                        check = 1
+                    if row[RS:RS+1][0] == 'R' and check ==1:
+                        Rcount+=1
+                        Y2.append(row[RS:RS+1][0])
+                    elif row[RS:RS+1][0] == 'S' and check ==1:
+                        Scount+=1
+                        Y2.append(row[RS:RS+1][0])
+                elif row[RS:RS+1][0] == 'NA' and (row[26:27][0] == 'Escherichia coli ' or row[26:27][0] == 'Klebsiella spp.' or row[26:27][0] == 'Staphylococcus spp.' or row[26:27][0] == 'Staphylococcus aureus' or row[26:27][0] == 'Acinetobacter spp.' or row[26:27][0] == 'Pseudomonas aeruginosa '):
+                    NAcount+=1
+            Totalcount+=1
+            if row[26:27][0] == 'Escherichia coli ':
+                groupi=2
+            elif row[26:27][0] == 'Klebsiella spp.':
+                groupi=3
+            elif row[26:27][0] == 'Staphylococcus spp.' or row[26:27][0] == 'Staphylococcus aureus':
+                groupi=4
+            elif row[26:27][0] == 'Acinetobacter spp.' :
+                groupi=1
+            elif row[26:27][0] == 'Pseudomonas aeruginosa ':
+                groupi=5
+            else : continue
+            if row[RS:RS+1][0] == 'R':
+                RSNAi=0
+            elif row[RS:RS+1][0] == 'S':
+                RSNAi=1
+            elif row[RS:RS+1][0] == 'NA':
+                RSNAi=2
+            groupRSNAcount[groupi][RSNAi]+=1;
+    print("Total data : " , Totalcount-1)
+    print("R : ",Rcount,",S : ",Scount,",NA : ",NAcount)
+    print("Group1 : ",groupcount[1])
+    print("R : ",groupRSNAcount[1][0],",S : ",groupRSNAcount[1][1],",NA : ",groupRSNAcount[1][2])
+    print("Group2 : ",groupcount[2])
+    print("R : ",groupRSNAcount[2][0],",S : ",groupRSNAcount[2][1],",NA : ",groupRSNAcount[2][2])
+    print("Group3 : ",groupcount[3])
+    print("R : ",groupRSNAcount[3][0],",S : ",groupRSNAcount[3][1],",NA : ",groupRSNAcount[3][2])
+    print("Group4 : ",groupcount[4])
+    print("R : ",groupRSNAcount[4][0],",S : ",groupRSNAcount[4][1],",NA : ",groupRSNAcount[4][2])
+    print("Group5 : ",groupcount[5])
+    print("R : ",groupRSNAcount[5][0],",S : ",groupRSNAcount[5][1],",NA : ",groupRSNAcount[5][2])
