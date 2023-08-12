@@ -236,8 +236,11 @@ for i in range(0,category+1):
     AUCs = []
 
     # ----model-----
+    #LogisticRegression
+    #clf = LogisticRegression(penalty='l1', C=c, max_iter = 5000 ,multi_class='ovr',solver='saga',random_state=42)
+
     # DecisionTree
-    clf = DecisionTreeClassifier(min_samples_leaf=25,random_state=0)
+    #clf = DecisionTreeClassifier(min_samples_leaf=25,random_state=0)
 
     # SVM
     #clf = svm.SVC(kernel='rbf',C=c,decision_function_shape='ovr',random_state=42)
