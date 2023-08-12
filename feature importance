@@ -1,0 +1,294 @@
+import numpy as np
+import csv
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder
+
+from sklearn.metrics import roc_curve
+from sklearn.metrics import RocCurveDisplay
+from sklearn import metrics
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import cross_val_score
+from sklearn import svm
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from xgboost.sklearn import XGBClassifier
+from sklearn import tree
+import pydotplus
+from sklearn.model_selection import StratifiedShuffleSplit
+
+
+under_over = 1
+
+with open('resistance_data_20172021-v3.csv', newline='',encoding="unicode_escape") as csvfile:
+
+    rows = list(csv.reader(csvfile))
+    X=[]
+    Y1=[]
+    Y2=[]
+    Totalcount = 0
+    Rcount=0
+    Scount=0
+    NAcount=0
+    groupcount=[0]*6
+
+    #antibiotic
+    RS = 27   #AMIKACIN:27  CEFOXITIN:37  CEFTAZIDIME:38  LEVOFLOXACIN:53  MEROPENEM:55  PIPERACILLIN.TAZOBACTAM:65  VANCOMYCIN:77
+    groupRSNAcount= [[0, 0, 0], [0, 0, 0], [0, 0, 0],[0, 0, 0],[0, 0, 0],[0, 0, 0]]
+    groupi=0
+    RSNAi=0
+    name = 0
+    for row in rows:
+        if Totalcount == 0 :
+            print(row[RS:RS+1][0])
+            name = row[RS:RS+1][0]
+        check = 0
+        if Totalcount != 0 :
+            if row[RS:RS+1][0] != 'NA':
+                if row[26:27][0] == 'Escherichia coli ':
+                    X.append(row[3:8]+row[10:11]+row[13:25])
+                    Y1.append(2)
+                    groupcount[2]+=1
+                    check = 1
+                elif row[26:27][0] == 'Klebsiella spp.':
+                    X.append(row[3:8]+row[10:11]+row[13:25])
+                    Y1.append(3)
+                    groupcount[3]+=1
+                    check = 1
+                elif row[26:27][0] == 'Staphylococcus spp.' or row[26:27][0] == 'Staphylococcus aureus':
+                    X.append(row[3:8]+row[10:11]+row[13:25])
+                    Y1.append(4)
+                    groupcount[4]+=1
+                    check = 1
+                elif row[26:27][0] == 'Acinetobacter spp.' :
+                    X.append(row[3:8]+row[10:11]+row[13:25])
+                    Y1.append(1)
+                    groupcount[1]+=1
+                    check = 1
+                elif row[26:27][0] == 'Pseudomonas aeruginosa ':
+                    X.append(row[3:8]+row[10:11]+row[13:25])
+                    Y1.append(5)
+                    groupcount[5]+=1
+                    check = 1
+                if row[RS:RS+1][0] == 'R' and check ==1:
+                    Rcount+=1
+                    Y2.append(row[RS:RS+1][0])
+                elif row[RS:RS+1][0] == 'S' and check ==1:
+                    Scount+=1
+                    Y2.append(row[RS:RS+1][0])
+            elif row[RS:RS+1][0] == 'NA':
+                NAcount+=1
+        Totalcount+=1
+        if row[26:27][0] == 'Escherichia coli ':
+            groupi=2
+        elif row[26:27][0] == 'Klebsiella spp.':
+            groupi=3
+        elif row[26:27][0] == 'Staphylococcus spp.' or row[26:27][0] == 'Staphylococcus aureus':
+            groupi=4
+        elif row[26:27][0] == 'Acinetobacter spp.' :
+            groupi=1
+        elif row[26:27][0] == 'Pseudomonas aeruginosa ':
+            groupi=5
+        else : continue
+        if row[RS:RS+1][0] == 'R':
+            RSNAi=0
+        elif row[RS:RS+1][0] == 'S':
+            RSNAi=1
+        elif row[RS:RS+1][0] == 'NA':
+            RSNAi=2
+        groupRSNAcount[groupi][RSNAi]+=1;
+    t_X1=np.array(X)
+labelencoder = LabelEncoder()
+
+
+
+for i in range(0,18):
+    t_X1[:,i] = labelencoder.fit_transform(t_X1[:,i])
+
+
+t_Y2 = np.array(labelencoder.fit_transform(np.array(Y2)))
+t_Y1 = np.array(labelencoder.fit_transform(np.array(Y1)))
+
+category=max(t_Y1)
+
+x_train, x_test, y_train, y_test = train_test_split(t_X1, t_Y2, test_size=0.2, random_state=42)
+sc = StandardScaler()
+C = [1000,100,10,1,0.1,0.01]
+
+print("Total data : " , Totalcount-1)
+print("R : ",Rcount,",S : ",Scount,",NA : ",NAcount)
+print("Group1 : ",groupcount[1])
+print("R : ",groupRSNAcount[1][0],",S : ",groupRSNAcount[1][1],",NA : ",groupRSNAcount[1][2])
+print("Group2 : ",groupcount[2])
+print("R : ",groupRSNAcount[2][0],",S : ",groupRSNAcount[2][1],",NA : ",groupRSNAcount[2][2])
+print("Group3 : ",groupcount[3])
+print("R : ",groupRSNAcount[3][0],",S : ",groupRSNAcount[3][1],",NA : ",groupRSNAcount[3][2])
+print("Group4 : ",groupcount[4])
+print("R : ",groupRSNAcount[4][0],",S : ",groupRSNAcount[4][1],",NA : ",groupRSNAcount[4][2])
+print("Group5 : ",groupcount[5])
+print("R : ",groupRSNAcount[5][0],",S : ",groupRSNAcount[5][1],",NA : ",groupRSNAcount[5][2])
+
+AUC = [[0 for _ in range(6)] for _ in range(7)]
+AUC[0]=['','group1','group2','group3','group4','group5']
+string = ['c=1000','c=100','c=10','c=1','c=0.1','c=0.01']
+for i in range(1,7):
+    AUC[i][0] = string[i-1]
+accuracy_array = [[0 for _ in range(7)] for _ in range(13)]
+accuracy_array[0]= ['','','group1','group2','group3','group4','group5']
+cross_validation = [[0 for _ in range(6)] for _ in range(7)]
+cross_validation[0]= ['','group1','group2','group3','group4','group5']
+for i in range(1,7):
+    cross_validation[i][0] = string[i-1]
+    
+for i in range(1,7):
+    accuracy_array[(i-1)*2+1][0] = string[i-1]
+    accuracy_array[(i-1)*2+2][0] = ''
+    accuracy_array[(i-1)*2+1][1] = 'Training accuracy'
+    accuracy_array[(i-1)*2+2][1] = 'Test accuracy'
+for i in range(0,category+1):
+    t_X2=t_X1[t_Y1==i]
+    t_Y3=t_Y2[t_Y1==i]
+    print("total data : " , np.size(t_Y3))
+    if np.size(t_Y3) <= 100: continue 
+    if np.size(t_Y3[t_Y3==0]) < 2 or np.size(t_Y3[t_Y3==1]) < 2: continue 
+    #modify..................
+    #x_train, x_test, y_train, y_test = train_test_split(t_X2, t_Y3, test_size=0.2, random_state=42)
+    x_train = []
+    y_train = []
+
+    sss = StratifiedShuffleSplit(n_splits=5, test_size=0.2, random_state=0)
+    sss.get_n_splits(t_X2, t_Y3)
+    for train_index, test_index in sss.split(t_X2, t_Y3):
+        x_train, x_test = t_X2[train_index], t_X2[test_index]
+        y_train, y_test = t_Y3[train_index], t_Y3[test_index]
+
+    t_X2_R = x_train[y_train==0]
+    t_X2_S = x_train[y_train==1]
+    t_Y3_R = y_train[y_train==0]
+    t_Y3_S = y_train[y_train==1]
+    newt_X2 = []
+    newt_Y3 = []
+    k = 0
+    if under_over == 0:
+        if len(t_X2_R)<len(t_X2_S) :
+            for k in range(len(t_X2_R)):
+                newt_X2.append(t_X2_R[k])
+            for k in range(len(t_X2_R)):
+                newt_X2.append(t_X2_S[k])
+            for k in range(len(t_Y3_R)):
+                newt_Y3.append(t_Y3_R[k])
+            for k in range(len(t_Y3_R)):
+                newt_Y3.append(t_Y3_S[k])
+        else :
+            for k in range(len(t_X2_S)):
+                newt_X2.append(t_X2_S[k])
+            for k in range(len(t_X2_S)):
+                newt_X2.append(t_X2_R[k])
+            for k in range(len(t_Y3_S)):
+                newt_Y3.append(t_Y3_S[k])
+            for k in range(len(t_Y3_S)):
+                newt_Y3.append(t_Y3_R[k])
+    else:
+        index = 0
+        #print(len(t_X2_R)," ",len(t_X2_S))
+        if len(t_X2_R)<len(t_X2_S) :
+            for k in range(len(t_X2_R)):
+                newt_X2.append(t_X2_R[k])
+                newt_Y3.append(t_Y3_R[k])
+            if len(t_X2_R) != 0 :
+                for k in range(len(t_X2_S)-len(t_X2_R)):
+                    newt_X2.append(t_X2_R[index])
+                    newt_Y3.append(t_Y3_R[index])
+                    index += 1
+                    index %= len(t_X2_R)
+            for k in range(len(t_X2_S)):
+                newt_X2.append(t_X2_S[k])
+                newt_Y3.append(t_Y3_S[k])
+        else :
+            for k in range(len(t_X2_S)):
+                newt_X2.append(t_X2_S[k])
+                newt_Y3.append(t_Y3_S[k])
+            if len(t_X2_S) != 0 :
+                for k in range(len(t_X2_R)-len(t_X2_S)):
+                    newt_X2.append(t_X2_S[index])
+                    newt_Y3.append(t_Y3_S[index])
+                    index += 1
+                    index %= len(t_X2_S)
+            for k in range(len(t_X2_R)):
+                newt_X2.append(t_X2_R[k])
+                newt_Y3.append(t_Y3_R[k])    
+        #print(len(newt_X2)," ",len(newt_Y3))
+    if np.size(newt_Y3) <= 100: continue 
+    x_train = newt_X2
+    y_train = newt_Y3              
+    print("training data : ",np.size(newt_Y3))
+
+    
+    print(labelencoder.inverse_transform([i]),end=' ')
+    print('[%d]= %d' % (i,np.size(t_Y3)))
+    x_train_std = sc.fit_transform(x_train)
+    x_test_std = sc.transform(x_test)
+    j = 0
+    FPRs = []
+    TPRs = []
+    AUCs = []
+
+    # ----model-----
+    # DecisionTree
+    clf = DecisionTreeClassifier(min_samples_leaf=25,random_state=0)
+
+    # SVM
+    #clf = svm.SVC(kernel='rbf',C=c,decision_function_shape='ovr',random_state=42)
+
+    # RandomForest
+    #clf = RandomForestClassifier(n_estimators=100, min_samples_leaf=25)
+
+    #XGBoost
+    #clf = XGBClassifier(num_class=1, n_estimators=100, learning_rate= 0.3, max_depth=6, subsample=1, 
+      gamma=0, reg_lambda=1, max_delta_step=0, colsample_bytree=1, min_child_weight=1, seed=1000,
+      eval_metric='mlogloss')
+    # ----model-----
+
+    
+    clf.fit(x_train_std, y_train)
+    scores = cross_val_score(clf, sc.fit_transform(newt_X2), newt_Y3, cv=10, scoring='f1_macro')
+    print('cross-validation :' ,scores)
+    print('cross-validation mean:' ,scores.mean())
+    cross_validation[j+1][i+1]=scores.mean()
+    #print('Coefficient of each feature:', list(map('{:.4f}'.format,clf.feature_importances_)))
+    #print('Coefficient of each feature:', clf.coef_)
+    featurename = ['GENDER', 'AGE','RESID_AREA','N_ADMISSION','PRIOR_HIS', 'WARD', 'DIAGNOSIS', 'OTHER_INFECT', 'DIABETES', 'LUNG_DISEASE', 'HEART_FAILURE', 'RENAL_IMPAIR', 'LIVER_IMPAIR', 'CANCER', 'IMMUN_DEFI', 'OTHER_COM', 'INDWELLING', 'SAMPLE']
+    feature_name = np.array(featurename)
+    feature_important = clf.feature_importances_
+    print('Coefficient of each feature:', list(map('{:.4f}'.format,feature_important)))
+    sorted_idx = feature_important.argsort()
+    plt.barh(feature_name[sorted_idx], feature_important[sorted_idx])
+    plt.xlim([0,1.5])
+    plt.title('Group '+str(i+1) )
+    plt.xlabel("feature importance")
+    plt.ylabel("feature name")
+    plt.savefig(name + ' Group '+str(i+1) + '.png',bbox_inches='tight')     
+    plt.show()
+    
+    print('Training accuracy: %.3f' % clf.score(x_train_std, y_train))
+    print('Test accuracy: %.3f' % clf.score(x_test_std, y_test))
+    accuracy_array[(j)*2+1][i+2] = clf.score(x_train_std, y_train)
+    accuracy_array[(j)*2+2][i+2] = clf.score(x_test_std, y_test)
+    #print(clf.predict(x_test_std[:][0].reshape(1, -1)))
+    #print(clf.predict_proba(X1))
+    print('')
+
+    y_score = clf.fit(x_train_std, y_train).predict(x_test_std)
+    fpr, tpr, _ = roc_curve(y_test, y_score, pos_label=clf.classes_[1])
+    roc_auc = metrics.auc(fpr, tpr)
+    AUC[j+1][i+1] = roc_auc
+    FPRs.append(fpr)
+    TPRs.append(tpr)
+    AUCs.append(roc_auc)
+    j+=1
+
+
+    print('----------------------------\n\n')
+
